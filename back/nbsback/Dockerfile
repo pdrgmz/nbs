@@ -1,6 +1,9 @@
 # Use an official OpenJDK runtime as a parent image
 FROM openjdk:21-jdk-slim
 
+# Install Maven
+RUN apt-get update && apt-get install -y --no-install-recommends maven && rm -rf /var/lib/apt/lists/*
+
 # Set the working directory in the container
 WORKDIR /app
 
