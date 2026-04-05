@@ -1,0 +1,224 @@
+package com.nbs.nbsback.services;
+
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nbs.nbsback.clients.StravaApiClient;
+import com.nbs.nbsback.models.Activity;
+import com.nbs.nbsback.models.Athlete;
+import com.nbs.nbsback.models.Stream;
+import com.nbs.nbsback.repositories.ActivityRepository;
+import com.nbs.nbsback.repositories.AthleteRepository;
+import com.nbs.nbsback.repositories.StreamRepository;
+import com.nbs.nbsback.stravamodels.StravaActivity;
+import com.nbs.nbsback.stravamodels.StravaActivityDetail;
+import com.nbs.nbsback.stravamodels.StravaAthlete;
+import com.nbs.nbsback.stravamodels.StravaStream;
+
+@Service
+public class StravaService {
+
+    private static final Logger logger = LoggerFactory.getLogger(StravaService.class);
+
+    @Autowired
+    private StravaApiClient stravaApiClient;
+
+    @Autowired
+    private AthleteRepository athleteRepository;
+
+    @Autowired
+    private ActivityRepository activityRepository;
+
+    @Autowired
+    private StreamRepository streamRepository;
+
+    @Autowired
+    private StatsService statsService;
+
+    public String syncAthleteData() {
+
+        StravaAthlete stravaAthlete = fetchAndSaveAthleteData();
+
+        if (stravaAthlete == null) {
+            return "Failed to synchronize athlete data. Check logs for details.";
+        }
+
+        Athlete athlete = athleteRepository.findById(stravaAthlete.getId())
+                .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + stravaAthlete.getId()));
+
+        LocalDateTime now = LocalDateTime.now();
+        for (int year = athlete.getCreatedAt().getYear(); year <= now.getYear(); year++) {
+            try {
+                statsService.calculateAllStats(year, athlete);
+            } catch (Exception e) {
+                logger.error("Error calculating stats for year {}", year);
+            }
+        }
+
+        return "Data synchronization done. Check logs for details.";
+
+    }
+
+    public String syncAllStats() {
+
+        Athlete athlete = athleteRepository.findById(60270508L)
+                .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + 60270508L));
+
+        LocalDateTime now = LocalDateTime.now();
+        for (int year = athlete.getCreatedAt().getYear(); year <= now.getYear(); year++) {
+            try {
+                statsService.calculateAllStats(year, athlete);
+            } catch (Exception e) {
+                logger.error("Error calculating stats for year {}", year);
+            }
+        }
+
+        return "Data synchronization done. Check logs for details.";
+    }
+
+    private StravaAthlete fetchAndSaveAthleteData() {
+        logger.info("Starting athlete data synchronization...");
+        try {
+
+            logger.info("Fetching athlete data from Strava API...");
+            StravaAthlete stravaAthlete = stravaApiClient.getAthlete();
+
+            logger.info("Building and saving athlete data...");
+            Athlete athlete = buildAthleteFromStrava(stravaAthlete);
+            athleteRepository.save(athlete);
+
+            logger.info("Fetching activities from Strava API...");
+            List<StravaActivity> stravaActivities = stravaApiClient.getActivities(null, null, 1, 150);
+
+            for (StravaActivity stravaActivity : stravaActivities) {
+                logger.info("Fetching details for activity ID: {}", stravaActivity.getId());
+                StravaActivityDetail stravaActivityDetail = stravaApiClient.getActivity(stravaActivity.getId(), true);
+
+                logger.info("Building and saving activity data for activity ID: {}", stravaActivity.getId());
+                Activity activity = buildActivityFromStrava(athlete, stravaActivityDetail);
+                activityRepository.save(activity);
+
+                String[] keys = {
+                        "time",
+                        "latlng",
+                        "distance",
+                        "altitude",
+                        "velocity_smooth",
+                        "heartrate",
+                        "cadence",
+                        "watts",
+                        "temp",
+                        "moving",
+                        "grade_smooth"
+                };
+
+                logger.info("Fetching streams for activity ID: {}", stravaActivity.getId());
+                ArrayList<StravaStream> stravaStreams = stravaApiClient.getActivityStreams(stravaActivity.getId(),
+                        keys, null);
+
+                for (StravaStream stravaStream : stravaStreams) {
+                    logger.info("Building and saving stream data of type: {} for activity ID: {}",
+                            stravaStream.getType(), stravaActivity.getId());
+
+                    Stream stream = buildDataStreamFromStrava(activity, stravaStream);
+                    streamRepository.save(stream);
+                }
+            }
+
+            logger.info("Athlete data synchronization completed successfully.");
+            return stravaAthlete;
+        } catch (Exception e) {
+            logger.error("Error during synchronization: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private Athlete buildAthleteFromStrava(StravaAthlete stravaAthlete) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+        return new Athlete().builder()
+                .id(stravaAthlete.getId())
+
+                .username(stravaAthlete.getUsername())
+                .firstname(stravaAthlete.getFirstname())
+
+                .lastname(stravaAthlete.getLastname())
+                .city(stravaAthlete.getCity())
+                .state(stravaAthlete.getState())
+                .country(stravaAthlete.getCountry())
+                .sex(stravaAthlete.getSex())
+
+                .createdAt(LocalDateTime.parse(stravaAthlete.getCreatedAt(), formatter))
+                .updatedAt(LocalDateTime.parse(stravaAthlete.getUpdatedAt(), formatter))
+
+                .profileMedium(stravaAthlete.getProfileMedium())
+                .profile(stravaAthlete.getProfile())
+                .build();
+    }
+
+    private Activity buildActivityFromStrava(Athlete athlete, StravaActivityDetail stravaActivityDetail) {
+        return new Activity().builder()
+                .id(stravaActivityDetail.getId())
+
+                .athlete(athlete) // Assign the Athlete object instead of athleteId
+
+                .name(stravaActivityDetail.getName())
+                .distance(stravaActivityDetail.getDistance())
+                .movingTime(stravaActivityDetail.getMovingTime())
+                .elapsedTime(stravaActivityDetail.getElapsedTime())
+                .totalElevationGain(stravaActivityDetail.getTotalElevationGain())
+                .type(stravaActivityDetail.getType())
+                .sportType(stravaActivityDetail.getSportType())
+                .deviceName(stravaActivityDetail.getDeviceName())
+                .startDate(stravaActivityDetail.getStartDate())
+                .startDateLocal(stravaActivityDetail.getStartDateLocal())
+                .timezone(stravaActivityDetail.getTimezone())
+                .utcOffset(stravaActivityDetail.getUtcOffset())
+                .startLatlng(stravaActivityDetail.getStartLatlng())
+                .endLatlng(stravaActivityDetail.getEndLatlng())
+                .averageSpeed(stravaActivityDetail.getAverageSpeed())
+                .maxSpeed(stravaActivityDetail.getMaxSpeed())
+                .averageCadence(stravaActivityDetail.getAverageCadence())
+                .hasHeartrate(stravaActivityDetail.isHasHeartrate())
+                .averageHeartrate(stravaActivityDetail.getAverageHeartrate())
+                .maxHeartrate(stravaActivityDetail.getMaxHeartrate())
+                .elevHigh(stravaActivityDetail.getElevHigh())
+                .elevLow(stravaActivityDetail.getElevLow())
+
+                .polyline(stravaActivityDetail.getMap().getPolyline())
+                .summaryPolyline(stravaActivityDetail.getMap().getSummaryPolyline())
+
+                .build();
+    }
+
+    private Stream buildDataStreamFromStrava(Activity activity, StravaStream stravaStream) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+        String dataJson = null;
+        try {
+            dataJson = objectMapper.writeValueAsString(stravaStream.getData());
+        } catch (JsonProcessingException e) {
+            logger.error("Error converting stream data to JSON: {}", e.getMessage(), e);
+        }
+
+        return new Stream().builder()
+                .type(stravaStream.getType())
+                .data(dataJson) // Store the original List<Object> data
+                .seriesType(stravaStream.getSeriesType())
+                .originalSize(stravaStream.getOriginalSize())
+                .resolution(stravaStream.getResolution())
+                .activity(activity) // Assign the Activity object instead of activityId
+                .build();
+
+    }
+
+}

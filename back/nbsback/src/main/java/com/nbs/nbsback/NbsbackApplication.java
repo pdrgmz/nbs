@@ -2,20 +2,9 @@ package com.nbs.nbsback;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 
-import io.swagger.v3.oas.annotations.OpenAPIDefinition;
-import io.swagger.v3.oas.annotations.info.Info;
-
-@OpenAPIDefinition(
-    info = @Info(
-        title = "NBS Back API",
-        version = "1.0",
-        description = "API documentation for NBS Back"
-    )
-)
+@EnableFeignClients(basePackages = "com.nbs.nbsback.clients")
 @SpringBootApplication
 public class NbsbackApplication {
 
