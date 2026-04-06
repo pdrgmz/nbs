@@ -1,28 +1,29 @@
 version: '3.8'
 
 services:
-  springboot:
-      build:
-        context: .
-        dockerfile: Dockerfile
-      container_name: springboot_nbs
-      ports:
-        - "8080:8080"
-      environment:
-        SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/nbs_database
-        SPRING_DATASOURCE_USERNAME: postgres
-        SPRING_DATASOURCE_PASSWORD: postgres
-      depends_on:
-        - postgres
-  postgres:
-    image: postgres:15
-    container_name: postgres_nbs
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: nbs_database
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: springboot_nbs
     ports:
-      - "5454:5432"
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/nbsdb
+      SPRING_DATASOURCE_USERNAME: nbsuser
+      SPRING_DATASOURCE_PASSWORD: nbspassword
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    container_name: nbs_db
+    environment:
+      POSTGRES_USER: nbsuser
+      POSTGRES_PASSWORD: nbspassword
+      POSTGRES_DB: nbsdb
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
