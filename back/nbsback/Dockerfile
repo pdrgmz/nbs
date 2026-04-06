@@ -4,6 +4,10 @@ FROM eclipse-temurin:21-jdk
 # Install Maven
 RUN apt-get update && apt-get install -y --no-install-recommends maven && rm -rf /var/lib/apt/lists/*
 
+# Set JAVA_HOME explicitly
+ENV JAVA_HOME=/usr/lib/jvm/java-21-openjdk
+RUN export JAVA_HOME && java -version
+
 # Verify Java version
 RUN java -version
 
