@@ -8,6 +8,7 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.geo.Point;
 import org.springframework.stereotype.Service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -197,8 +198,8 @@ public class StravaService {
                 .polyline(stravaActivityDetail.getMap().getPolyline())
                 .summaryPolyline(stravaActivityDetail.getMap().getSummaryPolyline())
 
-                .polylinePoints(decodePolyline(stravaActivityDetail.getMap().getPolyline()).toString())
-                .summaryPolylinePoints(decodePolyline(stravaActivityDetail.getMap().getSummaryPolyline()).toString())
+                .polylinePoints(decodePolyline(stravaActivityDetail.getMap().getPolyline()))
+                .summaryPolylinePoints(decodePolyline(stravaActivityDetail.getMap().getSummaryPolyline()))
 
                 .build();
     }
@@ -225,38 +226,42 @@ public class StravaService {
     }
 
 
-    public List<List<Double>> decodePolyline(String encoded) {
-        List<List<Double>> polyline = new ArrayList<>();
+    public String decodePolyline(String encoded) {
+        StringBuilder result = new StringBuilder("[");
         int index = 0, len = encoded.length();
         int lat = 0, lng = 0;
 
         while (index < len) {
-            int b, shift = 0, result = 0;
+            int b, shift = 0, value = 0;
             do {
                 b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1F) << shift;
+                value |= (b & 0x1F) << shift;
                 shift += 5;
             } while (b >= 0x20);
-            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            int dlat = ((value & 1) != 0 ? ~(value >> 1) : (value >> 1));
             lat += dlat;
 
             shift = 0;
-            result = 0;
+            value = 0;
             do {
                 b = encoded.charAt(index++) - 63;
-                result |= (b & 0x1F) << shift;
+                value |= (b & 0x1F) << shift;
                 shift += 5;
             } while (b >= 0x20);
-            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            int dlng = ((value & 1) != 0 ? ~(value >> 1) : (value >> 1));
             lng += dlng;
 
-            List<Double> point = new ArrayList<>();
-            point.add(lat / 1E5);
-            point.add(lng / 1E5);
-            polyline.add(point);
+            result.append("{")
+                  .append(lat / 1E5).append(",")
+                  .append(lng / 1E5).append("},");
         }
 
-        return polyline;
+        if (result.length() > 1) {
+            result.setLength(result.length() - 1); // Remove trailing comma
+        }
+        result.append("]");
+
+        return result.toString();
     }
 
 }
