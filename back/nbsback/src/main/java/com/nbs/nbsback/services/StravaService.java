@@ -225,7 +225,7 @@ public class StravaService {
     }
 
     public String decodePolyline(String encoded) {
-        StringBuilder result = new StringBuilder("[");
+        StringBuilder result = new StringBuilder("");
         int index = 0, len = encoded.length();
         int lat = 0, lng = 0;
 
@@ -255,8 +255,7 @@ public class StravaService {
         if (result.length() > 1) {
             result.setLength(result.length() - 1); // Remove trailing comma
         }
-        result.append("]");
-
+        
         return result.toString();
     }
 
