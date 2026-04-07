@@ -1,6 +1,7 @@
 package com.nbs.nbsback.models;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -62,6 +63,12 @@ public class Activity {
 
     @Column(columnDefinition = "TEXT")
     private String summaryPolyline;
+
+    @Column(columnDefinition = "TEXT")
+    private String polylinePoints;
+
+    @Column(columnDefinition = "TEXT")
+    private String summaryPolylinePoints;
 
     @OneToMany(mappedBy = "activity", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JsonIgnore

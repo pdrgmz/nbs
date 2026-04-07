@@ -197,6 +197,9 @@ public class StravaService {
                 .polyline(stravaActivityDetail.getMap().getPolyline())
                 .summaryPolyline(stravaActivityDetail.getMap().getSummaryPolyline())
 
+                .polylinePoints(decodePolyline(stravaActivityDetail.getMap().getPolyline()).toString())
+                .summaryPolylinePoints(decodePolyline(stravaActivityDetail.getMap().getSummaryPolyline()).toString())
+
                 .build();
     }
 
@@ -219,6 +222,41 @@ public class StravaService {
                 .activity(activity) // Assign the Activity object instead of activityId
                 .build();
 
+    }
+
+
+    public List<List<Double>> decodePolyline(String encoded) {
+        List<List<Double>> polyline = new ArrayList<>();
+        int index = 0, len = encoded.length();
+        int lat = 0, lng = 0;
+
+        while (index < len) {
+            int b, shift = 0, result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1F) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlat = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lat += dlat;
+
+            shift = 0;
+            result = 0;
+            do {
+                b = encoded.charAt(index++) - 63;
+                result |= (b & 0x1F) << shift;
+                shift += 5;
+            } while (b >= 0x20);
+            int dlng = ((result & 1) != 0 ? ~(result >> 1) : (result >> 1));
+            lng += dlng;
+
+            List<Double> point = new ArrayList<>();
+            point.add(lat / 1E5);
+            point.add(lng / 1E5);
+            polyline.add(point);
+        }
+
+        return polyline;
     }
 
 }
