@@ -9,7 +9,9 @@ import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.nbs.nbsback.services.TokenService;
 
+import feign.Logger;
 import feign.RequestInterceptor;
+import feign.RequestTemplate;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
 import feign.jackson.JacksonDecoder;
@@ -31,6 +33,11 @@ public class FeignConfig {
                 requestTemplate.header("Authorization", token);
             }
         };
+    }
+
+    @Bean
+    public Logger.Level feignLoggerLevel() {
+        return Logger.Level.FULL; // Log full request and response details
     }
 
     @Bean

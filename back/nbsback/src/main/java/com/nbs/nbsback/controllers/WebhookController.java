@@ -25,15 +25,17 @@ public class WebhookController {
 
     // Endpoint para validar el webhook
     @GetMapping
-    public ResponseEntity<String> validateWebhook(@RequestParam Map<String, String> params) {
+    public ResponseEntity<Map<String, String>> validateWebhook(@RequestParam Map<String, String> params) {
         System.out.println("Validating webhook with params: " + params);
         String mode = params.get("hub.mode");
         String token = params.get("hub.verify_token");
         String challenge = params.get("hub.challenge");
 
-        if ("subscribe".equals(mode) && VERIFY_TOKEN.equals(token)) {
+        if ("subscribe".equals(mode) && "STRAVA_VERIFY_TOKEN_NBSB".equals(token)) {
             System.out.println("Webhook validated successfully. Responding with challenge: " + challenge);
-            return ResponseEntity.ok(challenge); // Return plain text
+            return ResponseEntity.ok()
+                    .header("Content-Type", "application/json")
+                    .body(Map.of("hub.challenge", challenge)); // Return JSON response
         }
 
         System.out.println("Webhook validation failed. Invalid token or mode.");
