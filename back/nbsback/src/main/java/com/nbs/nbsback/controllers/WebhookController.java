@@ -21,23 +21,22 @@ public class WebhookController {
     @Autowired
     private StravaService stravaService;
 
-    private static final String VERIFY_TOKEN = "STRAVA_VERIFY_TOKEN"; // Cambiar por tu token de verificación
+    private static final String VERIFY_TOKEN = "STRAVA_VERIFY_TOKEN_NBSB"; // Cambiar por tu token de verificación
 
     // Endpoint para validar el webhook
     @GetMapping
-    public ResponseEntity<Map<String, String>> validateWebhook(@RequestParam Map<String, String> params) {
+    public ResponseEntity<String> validateWebhook(@RequestParam Map<String, String> params) {
         System.out.println("Validating webhook with params: " + params);
         String mode = params.get("hub.mode");
         String token = params.get("hub.verify_token");
         String challenge = params.get("hub.challenge");
 
         if ("subscribe".equals(mode) && VERIFY_TOKEN.equals(token)) {
-
-            ResponseEntity<Map<String,String>> response = ResponseEntity.ok(Map.of("hub.challenge", challenge));
             System.out.println("Webhook validated successfully. Responding with challenge: " + challenge);
-            return response;
-            
+            return ResponseEntity.ok(challenge); // Return plain text
         }
+
+        System.out.println("Webhook validation failed. Invalid token or mode.");
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
 
