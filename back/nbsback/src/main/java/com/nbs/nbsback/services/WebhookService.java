@@ -1,16 +1,20 @@
 package com.nbs.nbsback.services;
 
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
+import java.util.Map;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.context.event.EventListener;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 
-import jakarta.annotation.PostConstruct;
+import com.nbs.nbsback.clients.StravaWebhookClient;
 
 @Service
 public class WebhookService {
+
+    @Autowired
+    private StravaWebhookClient stravaWebhookClient;
 
     @Value("${strava.client.id}")
     private String clientId;
@@ -24,31 +28,13 @@ public class WebhookService {
     @Value("${strava.verify.token}")
     private String verifyToken;
 
-    @PostConstruct
+    @EventListener(ApplicationReadyEvent.class)
     public void subscribeToWebhook() {
         try {
-            URL url = new URL("https://www.strava.com/api/v3/push_subscriptions");
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            connection.setRequestMethod("POST");
-            connection.setDoOutput(true);
-            connection.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-
-            String requestBody = String.format(
-                "client_id=%s&client_secret=%s&callback_url=%s&verify_token=%s",
+            Map<String, Object> response = stravaWebhookClient.subscribeToWebhook(
                 clientId, clientSecret, callbackUrl, verifyToken
             );
-
-            try (OutputStream os = connection.getOutputStream()) {
-                os.write(requestBody.getBytes());
-                os.flush();
-            }
-
-            int responseCode = connection.getResponseCode();
-            if (responseCode == 200 || responseCode == 201) {
-                System.out.println("Webhook suscrito exitosamente.");
-            } else {
-                System.err.println("Error al suscribir el webhook. Código de respuesta: " + responseCode);
-            }
+            System.out.println("Webhook suscrito exitosamente: " + response);
         } catch (Exception e) {
             System.err.println("Error al intentar suscribir el webhook: " + e.getMessage());
         }

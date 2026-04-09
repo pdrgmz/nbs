@@ -16,7 +16,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authorizationInterceptor)
                 .addPathPatterns("/**")
-                .excludePathPatterns("/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/auth/**", "/test/**"); // Exclude Swagger UI, API docs, /auth/*, and /test/* endpoints
+                .excludePathPatterns("/swagger-ui/**", "/v3/api-docs", "/v3/api-docs/**", "/auth/**", "/test/**", "/webhook/**"); // Exclude Swagger UI, API docs, /auth/*, /test/*, and /webhook/* endpoints
     }
 
     @Override

@@ -26,6 +26,7 @@ public class WebhookController {
     // Endpoint para validar el webhook
     @GetMapping
     public ResponseEntity<Map<String, String>> validateWebhook(@RequestParam Map<String, String> params) {
+        System.out.println("Validating webhook with params: " + params);
         String mode = params.get("hub.mode");
         String token = params.get("hub.verify_token");
         String challenge = params.get("hub.challenge");
