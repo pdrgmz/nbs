@@ -124,4 +124,20 @@ public class StatsService {
                 return statRepository.findByActivitiesId(activityId);
         }
 
+        public void syncStatsForActivity(Long objectId) {
+                
+                Activity newActivity = activityRepository.findById(objectId)
+                        .orElseThrow(() -> new IllegalArgumentException("Activity not found with ID: " + objectId));
+
+               statRepository.findStatsByDateInRange(newActivity.getStartDateLocal())
+                        .forEach(stat -> {
+                                if (stat.getActivities().stream().noneMatch(activity -> activity.getId().equals(objectId))) {
+                                        stat.getActivities().add(newActivity);
+                                        stat.calculateStats(stat.getActivities());
+                                        statRepository.save(stat);
+                                }
+                        });
+        }
+
+
 }

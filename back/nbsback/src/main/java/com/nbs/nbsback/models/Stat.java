@@ -61,7 +61,7 @@ public class Stat {
         calculateStats(activities);
     }
 
-      private void calculateStats(List<Activity> activities) {
+      public void calculateStats(List<Activity> activities) {
         this.totalDistance = activities.stream().mapToDouble(Activity::getDistance).sum() / 1000; // Convert to kilometers
         this.totalTime = activities.stream().mapToDouble(Activity::getMovingTime).sum() / 3600; // Convert to hours
         this.averagePace = this.totalTime > 0 ? this.totalDistance / this.totalTime : 0;
