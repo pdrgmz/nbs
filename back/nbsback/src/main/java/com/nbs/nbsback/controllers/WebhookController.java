@@ -32,7 +32,11 @@ public class WebhookController {
         String challenge = params.get("hub.challenge");
 
         if ("subscribe".equals(mode) && VERIFY_TOKEN.equals(token)) {
-            return ResponseEntity.ok(Map.of("hub.challenge", challenge));
+
+            ResponseEntity<Map<String,String>> response = ResponseEntity.ok(Map.of("hub.challenge", challenge));
+            System.out.println("Webhook validated successfully. Responding with challenge: " + challenge);
+            return response;
+            
         }
         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     }
