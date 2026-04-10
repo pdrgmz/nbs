@@ -44,6 +44,9 @@ public class StravaService {
     @Autowired
     private StatsService statsService;
 
+    @Autowired
+    private TokenService tokenService;
+
     public String syncAthleteData() {
 
         StravaAthlete stravaAthlete = fetchAndSaveAthleteData();
@@ -166,6 +169,7 @@ public class StravaService {
 
                 .profileMedium(stravaAthlete.getProfileMedium())
                 .profile(stravaAthlete.getProfile())
+                .refreshToken(null)
                 .build();
     }
 
@@ -322,12 +326,23 @@ public class StravaService {
     }
 
     public void syncActivity(Long objectId) {
+
         Athlete athlete = athleteRepository.findById(60270508L)
                 .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + 60270508L));
 
-        buildStravaactivityFull(athlete, objectId);
+        tokenService.setAccesToken(athlete.getAccessToken());
+        tokenService.getAccesToken(athlete.getRefreshToken());
 
-        statsService.syncStatsForActivity(objectId);        
+        try {
+
+            buildStravaactivityFull(athlete, objectId);
+
+            statsService.syncStatsForActivity(objectId);
+
+        } catch (Exception e) {
+            logger.error("Error synchronizing activity with ID {}: {}", objectId, e.getMessage(), e);
+            return;
+        }
 
         logger.info("Activity with ID {} synchronized successfully.", objectId);
     }

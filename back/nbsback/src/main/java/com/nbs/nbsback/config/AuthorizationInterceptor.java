@@ -32,7 +32,7 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
         }
 
         // Store the token in the TokenService
-        tokenService.setToken(authorizationHeader);
+        tokenService.setAccesToken(authorizationHeader);
 
         return true;
     }
@@ -40,6 +40,6 @@ public class AuthorizationInterceptor implements HandlerInterceptor {
     @Override
     public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
         // Clear the token after the request is completed
-        tokenService.clearToken();
+        tokenService.clearAccessToken();
     }
 }

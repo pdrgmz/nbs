@@ -24,5 +24,4 @@ public class AthleteController {
         Optional<Athlete> athlete = athleteService.getAthleteById(id);
         return athlete.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
-
 }

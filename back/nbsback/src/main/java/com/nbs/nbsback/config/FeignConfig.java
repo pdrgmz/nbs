@@ -11,7 +11,6 @@ import com.nbs.nbsback.services.TokenService;
 
 import feign.Logger;
 import feign.RequestInterceptor;
-import feign.RequestTemplate;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
 import feign.jackson.JacksonDecoder;
@@ -27,10 +26,12 @@ public class FeignConfig {
     public RequestInterceptor requestInterceptor() {
         return requestTemplate -> {
             // Retrieve the Authorization token from TokenService
-            String token = tokenService.getToken();
-
-            if (token != null) {
-                requestTemplate.header("Authorization", token);
+            String accessToken = tokenService.getAccesToken();
+            
+            if (accessToken != null) {
+                requestTemplate.header("Authorization", "Bearer " + accessToken);
+            } else {
+                System.err.println("Access token is null. Ensure the token is refreshed or available.");
             }
         };
     }
@@ -57,4 +58,6 @@ public class FeignConfig {
     public Encoder feignEncoder(ObjectMapper customObjectMapper) {
         return new JacksonEncoder(customObjectMapper);
     }
+
+   
 }

@@ -18,5 +18,4 @@ public class AthleteService {
         return athleteRepository.findById(id);
     }
 
-  
 }

@@ -17,19 +17,21 @@ import com.nbs.nbsback.stravamodels.StravaStream;
 @FeignClient(name = "stravaApiClient", url = "${strava.api.base-url}")
 public interface StravaApiClient {
 
-    @GetMapping("/athlete")
-    StravaAthlete getAthlete();
+        @GetMapping("/athlete")
+        StravaAthlete getAthlete();
 
-    @GetMapping("/athlete/activities")
-    ArrayList<StravaActivity> getActivities(@RequestParam("before") Integer before,
-            @RequestParam("after") Integer after, @RequestParam("page") Integer page,
-            @RequestParam("per_page") Integer perPage);
+        @GetMapping("/athlete/activities")
+        ArrayList<StravaActivity> getActivities(@RequestParam("before") Integer before,
+                        @RequestParam("after") Integer after, @RequestParam("page") Integer page,
+                        @RequestParam("per_page") Integer perPage);
 
-    @GetMapping("/activities/{id}")
-    StravaActivityDetail getActivity(@PathVariable("id") Long activityId,
-            @RequestParam("include_all_efforts") Boolean includeAllEfforts);
+        @GetMapping("/activities/{id}")
+        StravaActivityDetail getActivity(@PathVariable("id") Long activityId,
+                        @RequestParam("include_all_efforts") Boolean includeAllEfforts);
 
-    @GetMapping("/activities/{id}/streams")
-    ArrayList<StravaStream> getActivityStreams(@PathVariable("id") Long activityId, @RequestParam("keys") String[] keys, @RequestParam(value = "key_by_type", required = false) Boolean keyByType);
+        @GetMapping("/activities/{id}/streams")
+        ArrayList<StravaStream> getActivityStreams(@PathVariable("id") Long activityId,
+                        @RequestParam("keys") String[] keys,
+                        @RequestParam(value = "key_by_type", required = false) Boolean keyByType);
 
 }
