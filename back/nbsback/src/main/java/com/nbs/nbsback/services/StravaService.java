@@ -257,7 +257,7 @@ public class StravaService {
             int dlng = ((value & 1) != 0 ? ~(value >> 1) : (value >> 1));
             lng += dlng;
 
-            result.append(lng / 1E5).append(",").append(lat / 1E5).append(" ");
+            result.append(lat / 1E5).append(",").append(lng / 1E5).append(" ");
         }
 
         if (result.length() > 1) {
