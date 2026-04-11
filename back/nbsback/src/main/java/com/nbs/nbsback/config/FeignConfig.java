@@ -29,7 +29,8 @@ public class FeignConfig {
             String accessToken = tokenService.getAccesToken();
             
             if (accessToken != null) {
-                requestTemplate.header("Authorization", "Bearer " + accessToken);
+
+                requestTemplate.header("Authorization", accessToken);
             } else {
                 System.err.println("Access token is null. Ensure the token is refreshed or available.");
             }
