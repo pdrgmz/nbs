@@ -42,12 +42,20 @@ public class WebhookController {
     // Endpoint para recibir eventos del webhook
     @PostMapping
     public ResponseEntity<Void> handleWebhookEvent(@RequestBody Map<String, Object> event) {
+        // Log the received event
+        System.out.println("Received webhook event: " + event);
+
         // Procesar el evento recibido
 
         // Aquí puedes desencadenar acciones según el evento
         String objectType = (String) event.get("object_type");
         String aspectType = (String) event.get("aspect_type");
         Long objectId = ((Number) event.get("object_id")).longValue();
+
+        // Log the extracted details
+        System.out.println("Object Type: " + objectType);
+        System.out.println("Aspect Type: " + aspectType);
+        System.out.println("Object ID: " + objectId);
 
         // Ejemplo de procesamiento
         if ("activity".equals(objectType)) {
