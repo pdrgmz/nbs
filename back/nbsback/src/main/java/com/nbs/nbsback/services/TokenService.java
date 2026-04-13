@@ -49,7 +49,7 @@ public class TokenService {
         refreshTokenHolder.remove();
     }
 
-    public void getAccesToken(String refreshToken) {
+    public void exchangeToken(String refreshToken) {
         System.out.println("---------------------------------------------------------");
         
         Map<String,Object> response = stravaOauthClient.exchangeToken(

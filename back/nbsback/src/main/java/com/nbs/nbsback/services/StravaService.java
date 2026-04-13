@@ -331,7 +331,10 @@ public class StravaService {
                 .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + 60270508L));
 
         tokenService.setAccesToken(athlete.getAccessToken());
-        tokenService.getAccesToken(athlete.getRefreshToken());
+        tokenService.exchangeToken(athlete.getRefreshToken());
+
+        System.out.println(tokenService.getAccesToken());
+        System.out.println(tokenService.getRefreshToken());
 
         try {
 
