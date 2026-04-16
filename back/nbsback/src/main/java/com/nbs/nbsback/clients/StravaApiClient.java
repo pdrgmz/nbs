@@ -2,36 +2,51 @@ package com.nbs.nbsback.clients;
 
 import java.util.ArrayList;
 
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.stereotype.Component;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import com.nbs.nbsback.stravamodels.StravaActivity;
 import com.nbs.nbsback.stravamodels.StravaActivityDetail;
 import com.nbs.nbsback.stravamodels.StravaAthlete;
 import com.nbs.nbsback.stravamodels.StravaStream;
 
-@Component
-@FeignClient(name = "stravaApiClient", url = "${strava.api.base-url}")
+import feign.Headers;
+import feign.Param;
+import feign.RequestLine;
+
 public interface StravaApiClient {
 
-        @GetMapping("/athlete")
-        StravaAthlete getAthlete();
+        @RequestLine("GET /athlete")
+        @Headers({
+                        "Content-Type: application/json",
+                        "Authorization: Bearer {token}"
+        })
+        StravaAthlete getAthlete(@Param("token") String token);
 
-        @GetMapping("/athlete/activities")
-        ArrayList<StravaActivity> getActivities(@RequestParam("before") Integer before,
-                        @RequestParam("after") Integer after, @RequestParam("page") Integer page,
-                        @RequestParam("per_page") Integer perPage);
 
-        @GetMapping("/activities/{id}")
-        StravaActivityDetail getActivity(@PathVariable("id") Long activityId,
-                        @RequestParam("include_all_efforts") Boolean includeAllEfforts);
+        @RequestLine("GET /athlete/activities?before={before}&after={after}&page={page}&per_page={perPage}")
+        @Headers({
+                        "Content-Type: application/json",
+                        "Authorization: Bearer {token}"
+        })
+        ArrayList<StravaActivity> getActivities(@Param("token") String token, @Param("before") Integer before,
+                        @Param("after") Integer after, @Param("page") Integer page,
+                        @Param("perPage") Integer perPage);
 
-        @GetMapping("/activities/{id}/streams")
-        ArrayList<StravaStream> getActivityStreams(@PathVariable("id") Long activityId,
-                        @RequestParam("keys") String[] keys,
-                        @RequestParam(value = "key_by_type", required = false) Boolean keyByType);
+
+        @RequestLine("GET /activities/{id}?include_all_efforts={includeAllEfforts}")
+        @Headers({
+                        "Content-Type: application/json",
+                        "Authorization: Bearer {token}"
+        })
+        StravaActivityDetail getActivity(@Param("token") String token, @Param("id") Long activityId,
+                        @Param("includeAllEfforts") Boolean includeAllEfforts);
+
+
+        @RequestLine("GET /activities/{id}/streams?keys={keys}&key_by_type={keyByType}")
+        @Headers({
+                        "Content-Type: application/json",
+                        "Authorization: Bearer {token}"
+        })
+        ArrayList<StravaStream> getActivityStreams(@Param("token") String token, @Param("id") Long activityId,
+                        @Param("keys") String[] keys,
+                        @Param("keyByType") Boolean keyByType);
 
 }

@@ -47,8 +47,8 @@ public class StravaService {
     @Autowired
     private TokenService tokenService;
 
-    public String syncAthleteData() {
-
+    public String syncAthleteData(Long athleteId) {
+        tokenService.refreshToken(athleteId);
         StravaAthlete stravaAthlete = fetchAndSaveAthleteData();
 
         if (stravaAthlete == null) {
@@ -76,6 +76,7 @@ public class StravaService {
         Athlete athlete = athleteRepository.findById(60270508L)
                 .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + 60270508L));
 
+        tokenService.refreshToken(athlete.getId());
         LocalDateTime now = LocalDateTime.now();
         for (int year = athlete.getCreatedAt().getYear(); year <= now.getYear(); year++) {
             try {
@@ -91,16 +92,17 @@ public class StravaService {
     private StravaAthlete fetchAndSaveAthleteData() {
         logger.info("Starting athlete data synchronization...");
         try {
-
+            
             logger.info("Fetching athlete data from Strava API...");
-            StravaAthlete stravaAthlete = stravaApiClient.getAthlete();
+            StravaAthlete stravaAthlete = stravaApiClient.getAthlete(tokenService.getAccessToken());
 
             logger.info("Building and saving athlete data...");
             Athlete athlete = buildAthleteFromStrava(stravaAthlete);
             athleteRepository.save(athlete);
 
             logger.info("Fetching activities from Strava API...");
-            List<StravaActivity> stravaActivities = stravaApiClient.getActivities(null, null, 1, 150);
+            List<StravaActivity> stravaActivities = stravaApiClient.getActivities(tokenService.getAccessToken(), null,
+                    null, 1, 150);
 
             for (StravaActivity stravaActivity : stravaActivities) {
                 buildStravaactivityFull(athlete, stravaActivity.getId());
@@ -116,7 +118,9 @@ public class StravaService {
 
     private void buildStravaactivityFull(Athlete athlete, Long activityId) {
         logger.info("Fetching details for activity ID: {}", activityId);
-        StravaActivityDetail stravaActivityDetail = stravaApiClient.getActivity(activityId, true);
+
+        StravaActivityDetail stravaActivityDetail = stravaApiClient.getActivity(tokenService.getAccessToken(),
+                activityId, true);
 
         logger.info("Building and saving activity data for activity ID: {}", activityId);
         Activity activity = buildActivityFromStrava(athlete, stravaActivityDetail);
@@ -137,7 +141,8 @@ public class StravaService {
         };
 
         logger.info("Fetching streams for activity ID: {}", activityId);
-        ArrayList<StravaStream> stravaStreams = stravaApiClient.getActivityStreams(activityId,
+        ArrayList<StravaStream> stravaStreams = stravaApiClient.getActivityStreams(tokenService.getAccessToken(),
+                activityId,
                 keys, null);
 
         for (StravaStream stravaStream : stravaStreams) {
@@ -169,7 +174,7 @@ public class StravaService {
 
                 .profileMedium(stravaAthlete.getProfileMedium())
                 .profile(stravaAthlete.getProfile())
-                .refreshToken(null)
+                .refreshToken(tokenService.getRefreshToken())
                 .build();
     }
 
@@ -233,6 +238,10 @@ public class StravaService {
     }
 
     public String decodePolyline(String encoded) {
+        if (encoded == null || encoded.isEmpty()) {
+            return "";
+        }
+
         StringBuilder result = new StringBuilder("");
         int index = 0, len = encoded.length();
         int lat = 0, lng = 0;
@@ -325,21 +334,14 @@ public class StravaService {
         return svgPoints.toString();
     }
 
-    public void syncActivity(Long objectId) {
+    public void syncActivity(Long objectId, Long ownerId) {
 
-        Athlete athlete = athleteRepository.findById(60270508L)
-                .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + 60270508L));
-
-        tokenService.setAccesToken(athlete.getAccessToken());
-        tokenService.exchangeToken(athlete.getRefreshToken());
-
-        System.out.println(tokenService.getAccesToken());
-        System.out.println(tokenService.getRefreshToken());
+        Athlete athlete = athleteRepository.findById(ownerId)
+                .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + ownerId));
 
         try {
-
+            tokenService.refreshToken(ownerId);
             buildStravaactivityFull(athlete, objectId);
-
             statsService.syncStatsForActivity(objectId);
 
         } catch (Exception e) {

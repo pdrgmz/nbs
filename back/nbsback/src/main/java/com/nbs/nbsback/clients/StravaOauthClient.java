@@ -1,25 +1,21 @@
 package com.nbs.nbsback.clients;
 
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-
 import java.util.Map;
 
-@FeignClient(name = "stravaOauthClient", url = "https://www.strava.com/api/v3/oauth")
-public interface StravaOauthClient {   
+import feign.Headers;
+import feign.Param;
+import feign.RequestLine;
 
-    @PostMapping(value = "/token", consumes = "application/x-www-form-urlencoded")
-    Map<String, Object> exchangeToken(@RequestParam("client_id") String clientId,
-                                       @RequestParam("client_secret") String clientSecret,
-                                       @RequestParam("refresh_token") String refreshToken,
-                                       @RequestParam("grant_type") String grantType);
+public interface StravaOauthClient { 
 
-    @PostMapping(value = "/token", consumes = "application/x-www-form-urlencoded")
-    Map<String, Object> refreshToken(@RequestParam("client_id") String clientId,
-                                      @RequestParam("client_secret") String clientSecret,
-                                      @RequestParam("grant_type") String grantType,
-                                      @RequestParam("refresh_token") String refreshToken);
+    @RequestLine("POST /token?client_id={clientId}&client_secret={clientSecret}&refresh_token={refreshToken}&grant_type={grantType}")
+    @Headers({
+            "Content-Type:application/x-www-form-urlencoded"
+    })
+    Map<String, Object> stravaToken(@Param("clientId") String clientId,
+            @Param("clientSecret") String clientSecret,
+            @Param("refreshToken") String refreshToken,
+            @Param("grantType") String grantType);
 
 
 }

@@ -13,15 +13,20 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.nbs.nbsback.services.StravaService;
+import com.nbs.nbsback.services.WebhookService;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @RestController
 @RequestMapping("/webhook")
 public class WebhookController {
 
     @Autowired
-    private StravaService stravaService;
+    private WebhookService webhookService;
 
     private static final String VERIFY_TOKEN = "STRAVA_VERIFY_TOKEN_NBSB"; // Cambiar por tu token de verificación
+    private static final Logger logger = LoggerFactory.getLogger(WebhookController.class);
 
     // Endpoint para validar el webhook
     @GetMapping
@@ -42,38 +47,9 @@ public class WebhookController {
     // Endpoint para recibir eventos del webhook
     @PostMapping
     public ResponseEntity<Void> handleWebhookEvent(@RequestBody Map<String, Object> event) {
-        // Log the received event
-        System.out.println("Received webhook event: " + event);
-
-        // Procesar el evento recibido
-
-        // Aquí puedes desencadenar acciones según el evento
-        String objectType = (String) event.get("object_type");
-        String aspectType = (String) event.get("aspect_type");
-        Long objectId = ((Number) event.get("object_id")).longValue();
-
-        // Log the extracted details
-        System.out.println("Object Type: " + objectType);
-        System.out.println("Aspect Type: " + aspectType);
-        System.out.println("Object ID: " + objectId);
-
-        // Ejemplo de procesamiento
-        if ("activity".equals(objectType)) {
-            switch (aspectType) {
-                case "create":
-                    // Crear actividad
-                    stravaService.syncActivity(objectId);
-                    System.out.println("Nueva actividad creada con ID: " + objectId);
-                    break;
-                case "update":
-                    System.out.println("Actividad actualizada con ID: " + objectId);
-                    break;
-                case "delete":
-                    System.out.println("Actividad eliminada con ID: " + objectId);
-                    break;
-            }
-        }
-
+        webhookService.handleWebHookEvent(event);
         return ResponseEntity.ok().build();
     }
+
+    
 }

@@ -15,6 +15,9 @@ import com.nbs.nbsback.models.StatType;
 import com.nbs.nbsback.repositories.ActivityRepository;
 import com.nbs.nbsback.repositories.StatRepository;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Service
 public class StatsService {
 
@@ -23,6 +26,8 @@ public class StatsService {
 
         @Autowired
         private StatRepository statRepository;
+
+        private static final Logger logger = LoggerFactory.getLogger(StatsService.class);
 
         public Boolean calculateAllStats(int year, Athlete athlete) {
 
@@ -43,11 +48,6 @@ public class StatsService {
         private void calculateYearlyStats(Athlete athlete, LocalDateTime startOfYear, LocalDateTime endOfYear,
                         List<Activity> allActivities) {
 
-                if (allActivities.size() == 0) {
-                        throw new IllegalArgumentException(
-                                        "No activities found for athlete ID: " + athlete.getId() + " in year: "
-                                                        + startOfYear.getYear());
-                }
                 // Calculate yearly stats
                 Stat yearlyStat = new Stat(StatType.ANNUAL, allActivities, startOfYear, endOfYear, athlete);
 
@@ -58,7 +58,7 @@ public class StatsService {
                         List<Activity> allActivities) {
                 // Adjust startOfYear to the Monday before January 1st
                 while (startOfYear.getDayOfWeek() != DayOfWeek.MONDAY) {
-                    startOfYear = startOfYear.minusDays(1);
+                        startOfYear = startOfYear.minusDays(1);
                 }
 
                 // Calculate weekly stats
@@ -76,11 +76,12 @@ public class StatsService {
                                                                         && !activity.getStartDate().isAfter(periodEnd))
                                                         .toList();
 
-                                        if (!periodActivities.isEmpty()) {
-                                                Stat weeklyStat = new Stat(StatType.WEEKLY, periodActivities, periodStart,
-                                                        periodEnd, athlete);
+                                        
+                                                Stat weeklyStat = new Stat(StatType.WEEKLY, periodActivities,
+                                                                periodStart,
+                                                                periodEnd, athlete);
                                                 statRepository.save(weeklyStat);
-                                        }
+                                        
                                 });
         }
 
@@ -102,11 +103,11 @@ public class StatsService {
                                                                         && !activity.getStartDate().isAfter(periodEnd))
                                                         .toList();
 
-                                        if (!periodActivities.isEmpty()) {
+                                        
                                                 Stat monthlyStat = new Stat(StatType.MONTHLY, periodActivities,
                                                                 periodStart, periodEnd, athlete);
                                                 statRepository.save(monthlyStat);
-                                        }
+                                        
 
                                 });
         }
@@ -125,19 +126,25 @@ public class StatsService {
         }
 
         public void syncStatsForActivity(Long objectId) {
-                
+                logger.info("Syncing stats for activity ID: " + objectId);
+
                 Activity newActivity = activityRepository.findById(objectId)
-                        .orElseThrow(() -> new IllegalArgumentException("Activity not found with ID: " + objectId));
+                                .orElseThrow(() -> new IllegalArgumentException(
+                                                "Activity not found with ID: " + objectId));
 
-               statRepository.findStatsByDateInRange(newActivity.getStartDateLocal())
-                        .forEach(stat -> {
-                                if (stat.getActivities().stream().noneMatch(activity -> activity.getId().equals(objectId))) {
-                                        stat.getActivities().add(newActivity);
-                                        stat.calculateStats(stat.getActivities());
-                                        statRepository.save(stat);
-                                }
-                        });
+                                                logger.info("Found activity: " + newActivity.getId() + " - " + newActivity.getName() + " - " + newActivity.getStartDate());
+
+                List<Stat> allStats = statRepository.findStatsByDateInRange(newActivity.getStartDateLocal());
+                                allStats.forEach(stat -> {
+                                        logger.info("Stat: " + stat.getId() + " - " + stat.getType() + " - " + stat.getStartDate() + " to "
+                                                        + stat.getEndDate());
+                                        if (stat.getActivities().stream()
+                                                        .noneMatch(activity -> activity.getId().equals(objectId))) {
+                                                stat.getActivities().add(newActivity);
+                                                stat.calculateStats(stat.getActivities());
+                                                statRepository.save(stat);
+                                        }
+                                });
         }
-
 
 }
