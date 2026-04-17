@@ -3,6 +3,7 @@ package com.nbs.nbsback.services;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -154,6 +155,11 @@ public class StravaService {
                     activityId, key));
         }
 
+        Set<String> seenTypes = new HashSet<>();
+        stravaStreams = stravaStreams.stream()
+                .filter(stream -> seenTypes.add(stream.getType()))
+                .collect(Collectors.toCollection(ArrayList::new));
+                
         for (StravaStream stravaStream : stravaStreams) {
             logger.info("Building and saving stream data of type: {} for activity ID: {}",
                     stravaStream.getType(), activityId);
