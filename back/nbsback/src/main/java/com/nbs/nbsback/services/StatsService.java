@@ -2,9 +2,12 @@ package com.nbs.nbsback.services;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,9 +17,6 @@ import com.nbs.nbsback.models.Stat;
 import com.nbs.nbsback.models.StatType;
 import com.nbs.nbsback.repositories.ActivityRepository;
 import com.nbs.nbsback.repositories.StatRepository;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 public class StatsService {
@@ -30,6 +30,9 @@ public class StatsService {
         private static final Logger logger = LoggerFactory.getLogger(StatsService.class);
 
         public Boolean calculateAllStats(int year, Athlete athlete) {
+
+                //Eliminar todas las stats anteriores del atleta
+                statRepository.deleteByAthleteId(athlete.getId());
 
                 // Use January 1st as the start of the year
                 LocalDateTime startOfYear = LocalDateTime.of(year, 1, 1, 0, 0, 0);
@@ -126,25 +129,51 @@ public class StatsService {
         }
 
         public void syncStatsForActivity(Long objectId) {
-                logger.info("Syncing stats for activity ID: " + objectId);
+                logger.info("Syncing stats for activity ID: {}", objectId);
 
                 Activity newActivity = activityRepository.findById(objectId)
-                                .orElseThrow(() -> new IllegalArgumentException(
-                                                "Activity not found with ID: " + objectId));
+                        .orElseThrow(() -> new IllegalArgumentException(
+                                "Activity not found with ID: " + objectId));
 
-                                                logger.info("Found activity: " + newActivity.getId() + " - " + newActivity.getName() + " - " + newActivity.getStartDate());
+                logger.info("Found activity: {} - {} - {}", newActivity.getId(), newActivity.getName(), newActivity.getStartDate());
 
-                List<Stat> allStats = statRepository.findStatsByDateInRange(newActivity.getStartDateLocal());
-                                allStats.forEach(stat -> {
-                                        logger.info("Stat: " + stat.getId() + " - " + stat.getType() + " - " + stat.getStartDate() + " to "
-                                                        + stat.getEndDate());
-                                        if (stat.getActivities().stream()
-                                                        .noneMatch(activity -> activity.getId().equals(objectId))) {
-                                                stat.getActivities().add(newActivity);
-                                                stat.calculateStats(stat.getActivities());
-                                                statRepository.save(stat);
-                                        }
-                                });
+                Athlete athlete = newActivity.getAthlete();
+                LocalDateTime activityDate = newActivity.getStartDateLocal();
+
+                // Ensure stats exist for the activity
+                ensureStatsForActivity(athlete, activityDate);
+
+                // Sync activity with existing stats
+                List<Stat> allStats = statRepository.findStatsByDateInRange(activityDate);
+                allStats.forEach(stat -> {
+                        logger.info("Stat: {} - {} - {} to {}", stat.getId(), stat.getType(), stat.getStartDate(), stat.getEndDate());
+                        if (stat.getActivities().stream().noneMatch(activity -> activity.getId().equals(objectId))) {
+                                stat.getActivities().add(newActivity);
+                                stat.calculateStats(stat.getActivities());
+                                statRepository.save(stat);
+                        }
+                });
+        }
+
+        private void ensureStatsForActivity(Athlete athlete, LocalDateTime activityDate) {
+                LocalDateTime startOfYear = activityDate.withDayOfYear(1).toLocalDate().atStartOfDay();
+                LocalDateTime endOfYear = startOfYear.plusYears(1).minusSeconds(1);
+                ensureStatExists(StatType.ANNUAL, athlete, startOfYear, endOfYear);
+
+                LocalDateTime startOfMonth = activityDate.withDayOfMonth(1).toLocalDate().atStartOfDay();
+                LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusSeconds(1);
+                ensureStatExists(StatType.MONTHLY, athlete, startOfMonth, endOfMonth);
+
+                LocalDateTime startOfWeek = activityDate.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
+                LocalDateTime endOfWeek = startOfWeek.plusDays(6).withHour(23).withMinute(59).withSecond(59);
+                ensureStatExists(StatType.WEEKLY, athlete, startOfWeek, endOfWeek);
+        }
+
+        private void ensureStatExists(StatType type, Athlete athlete, LocalDateTime startDate, LocalDateTime endDate) {
+                if (!statRepository.existsByTypeAndAthleteAndStartDateAndEndDate(type, athlete, startDate, endDate)) {
+                        Stat stat = new Stat(type, new ArrayList<>(), startDate, endDate, athlete);
+                        statRepository.save(stat);
+                }
         }
 
 }

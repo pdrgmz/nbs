@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,24 +50,15 @@ public class StravaService {
     private TokenService tokenService;
 
     public String syncAthleteData(Long athleteId) {
+
         logger.info("Starting synchronization for athlete ID: {}", athleteId);
+
         tokenService.refreshToken(athleteId);
+        
         StravaAthlete stravaAthlete = fetchAndSaveAthleteData();
 
         if (stravaAthlete == null) {
             return "Failed to synchronize athlete data. Check logs for details.";
-        }
-
-        Athlete athlete = athleteRepository.findById(stravaAthlete.getId())
-                .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + stravaAthlete.getId()));
-
-        LocalDateTime now = LocalDateTime.now();
-        for (int year = athlete.getCreatedAt().getYear(); year <= now.getYear(); year++) {
-            try {
-                statsService.calculateAllStats(year, athlete);
-            } catch (Exception e) {
-                logger.error("Error calculating stats for year {}", year);
-            }
         }
 
         return "Data synchronization done. Check logs for details.";
@@ -93,21 +86,28 @@ public class StravaService {
     private StravaAthlete fetchAndSaveAthleteData() {
         logger.info("Starting athlete data synchronization...");
         try {
-            
+            // Fetch athlete data
             logger.info("Fetching athlete data from Strava API...");
             StravaAthlete stravaAthlete = stravaApiClient.getAthlete(tokenService.getAccessToken());
 
+            // Save athlete data
             logger.info("Building and saving athlete data...");
             Athlete athlete = buildAthleteFromStrava(stravaAthlete);
             athleteRepository.save(athlete);
 
+            // Fetch activities from Strava API
             logger.info("Fetching activities from Strava API...");
-            List<StravaActivity> stravaActivities = stravaApiClient.getActivities(tokenService.getAccessToken(), null,
-                    null, 1, 150);
+            List<StravaActivity> stravaActivities = stravaApiClient.getActivities(
+                    tokenService.getAccessToken(), null, null, 1, 150);
 
-            for (StravaActivity stravaActivity : stravaActivities) {
-                buildStravaactivityFull(athlete, stravaActivity.getId());
-            }
+            // Get all activities from the database
+            List<Activity> allActivities = activityRepository.findByStartDateBetween(
+                    athlete.getCreatedAt(), LocalDateTime.now());
+
+            // Process new activities
+            findActivitiesNotInDatabase(stravaActivities, allActivities).forEach(stravaActivity -> {
+                processStravaActivity(athlete, stravaActivity.getId());
+            });
 
             logger.info("Athlete data synchronization completed successfully.");
             return stravaAthlete;
@@ -117,7 +117,13 @@ public class StravaService {
         }
     }
 
-    private void buildStravaactivityFull(Athlete athlete, Long activityId) {
+    private void processStravaActivity(Athlete athlete, Long activityId) {
+        logger.info("Processing activity ID: {}", activityId);
+        buildStravaActivityFull(athlete, activityId);
+        statsService.syncStatsForActivity(activityId);
+    }
+
+    private void buildStravaActivityFull(Athlete athlete, Long activityId) {
         logger.info("Fetching details for activity ID: {}", activityId);
 
         StravaActivityDetail stravaActivityDetail = stravaApiClient.getActivity(tokenService.getAccessToken(),
@@ -144,7 +150,7 @@ public class StravaService {
         logger.info("Fetching streams for activity ID: {}", activityId);
         ArrayList<StravaStream> stravaStreams = stravaApiClient.getActivityStreams(tokenService.getAccessToken(),
                 activityId,
-                keys, null);
+                keys, true);
 
         for (StravaStream stravaStream : stravaStreams) {
             logger.info("Building and saving stream data of type: {} for activity ID: {}",
@@ -342,7 +348,7 @@ public class StravaService {
 
         try {
             tokenService.refreshToken(ownerId);
-            buildStravaactivityFull(athlete, objectId);
+            buildStravaActivityFull(athlete, objectId);
             statsService.syncStatsForActivity(objectId);
 
         } catch (Exception e) {
@@ -351,6 +357,16 @@ public class StravaService {
         }
 
         logger.info("Activity with ID {} synchronized successfully.", objectId);
+    }
+
+    public List<StravaActivity> findActivitiesNotInDatabase(List<StravaActivity> stravaActivities, List<Activity> allActivities) {
+        Set<Long> databaseActivityIds = allActivities.stream()
+                .map(Activity::getId)
+                .collect(Collectors.toSet());
+
+        return stravaActivities.stream()
+                .filter(activity -> !databaseActivityIds.contains(activity.getId()))
+                .collect(Collectors.toList());
     }
 
 }

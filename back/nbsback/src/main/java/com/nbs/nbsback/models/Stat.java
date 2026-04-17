@@ -36,7 +36,7 @@ public class Stat {
     @JoinColumn(name = "athlete_id", nullable = false)
     private Athlete athlete;
 
-    @ManyToMany(cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @ManyToMany(cascade = CascadeType.ALL)
     @JoinTable(
         name = "stat_activities",
         joinColumns = @JoinColumn(name = "stat_id"),
