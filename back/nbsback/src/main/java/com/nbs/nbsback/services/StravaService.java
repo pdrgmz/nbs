@@ -48,6 +48,7 @@ public class StravaService {
     private TokenService tokenService;
 
     public String syncAthleteData(Long athleteId) {
+        logger.info("Starting synchronization for athlete ID: {}", athleteId);
         tokenService.refreshToken(athleteId);
         StravaAthlete stravaAthlete = fetchAndSaveAthleteData();
 
