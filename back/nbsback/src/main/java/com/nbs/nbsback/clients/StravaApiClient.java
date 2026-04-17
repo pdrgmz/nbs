@@ -46,7 +46,7 @@ public interface StravaApiClient {
                         "Authorization: Bearer {token}"
         })
         ArrayList<StravaStream> getActivityStreams(@Param("token") String token, @Param("id") Long activityId,
-                        @Param("keys") String[] keys,
+                        @Param("keys") String keys,
                         @Param("keyByType") Boolean keyByType);
 
 }

@@ -150,7 +150,7 @@ public class StravaService {
         logger.info("Fetching streams for activity ID: {}", activityId);
         ArrayList<StravaStream> stravaStreams = stravaApiClient.getActivityStreams(tokenService.getAccessToken(),
                 activityId,
-                keys, true);
+                String.join(",", keys), true);
 
         for (StravaStream stravaStream : stravaStreams) {
             logger.info("Building and saving stream data of type: {} for activity ID: {}",
