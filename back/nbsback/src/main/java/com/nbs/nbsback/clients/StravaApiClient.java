@@ -40,13 +40,11 @@ public interface StravaApiClient {
                         @Param("includeAllEfforts") Boolean includeAllEfforts);
 
 
-        @RequestLine("GET /activities/{id}/streams?keys={keys}&key_by_type={keyByType}")
+        @RequestLine("GET /activities/{id}/streams?keys={key}")
         @Headers({
                         "Content-Type: application/json",
                         "Authorization: Bearer {token}"
         })
-        ArrayList<StravaStream> getActivityStreams(@Param("token") String token, @Param("id") Long activityId,
-                        @Param("keys") String keys,
-                        @Param("keyByType") Boolean keyByType);
+        ArrayList<StravaStream> getActivityStreams(@Param("token") String token, @Param("id") Long activityId, @Param("key") String key);
 
 }

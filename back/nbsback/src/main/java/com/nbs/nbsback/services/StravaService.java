@@ -54,7 +54,7 @@ public class StravaService {
         logger.info("Starting synchronization for athlete ID: {}", athleteId);
 
         tokenService.refreshToken(athleteId);
-        
+
         StravaAthlete stravaAthlete = fetchAndSaveAthleteData();
 
         if (stravaAthlete == null) {
@@ -148,9 +148,11 @@ public class StravaService {
         };
 
         logger.info("Fetching streams for activity ID: {}", activityId);
-        ArrayList<StravaStream> stravaStreams = stravaApiClient.getActivityStreams(tokenService.getAccessToken(),
-                activityId,
-                String.join(",", keys), true);
+         ArrayList<StravaStream> stravaStreams = new ArrayList<>();
+        for (String key : keys) {
+           stravaStreams.addAll(stravaApiClient.getActivityStreams(tokenService.getAccessToken(),
+                    activityId, key));
+        }
 
         for (StravaStream stravaStream : stravaStreams) {
             logger.info("Building and saving stream data of type: {} for activity ID: {}",
@@ -359,7 +361,8 @@ public class StravaService {
         logger.info("Activity with ID {} synchronized successfully.", objectId);
     }
 
-    public List<StravaActivity> findActivitiesNotInDatabase(List<StravaActivity> stravaActivities, List<Activity> allActivities) {
+    public List<StravaActivity> findActivitiesNotInDatabase(List<StravaActivity> stravaActivities,
+            List<Activity> allActivities) {
         Set<Long> databaseActivityIds = allActivities.stream()
                 .map(Activity::getId)
                 .collect(Collectors.toSet());
