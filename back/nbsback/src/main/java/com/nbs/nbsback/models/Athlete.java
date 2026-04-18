@@ -43,7 +43,7 @@ public class Athlete {
     private String profileMedium;
     private String profile;
 
-    @OneToMany(mappedBy = "athlete", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "athlete", fetch = FetchType.LAZY)
     @JsonIgnore
     private List<Activity> activities;
 

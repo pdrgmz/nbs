@@ -17,6 +17,7 @@ import feign.Feign;
 import feign.Logger;
 import feign.RequestInterceptor;
 import feign.RequestTemplate;
+import feign.RetryableException;
 import feign.Retryer;
 import feign.codec.Decoder;
 import feign.codec.Encoder;
@@ -109,6 +110,25 @@ public class FeignConfig {
                 "FULL",
                 new Retryer.Default(),
                 new Logger.JavaLogger()).target(StravaWebhookClient.class, stravaApiBaseUrl);
+    }
+
+    @Bean
+    public Retryer customRetryer() {
+        return new Retryer.Default() {
+            @Override
+            public void continueOrPropagate(RetryableException e) {
+                if (e.status() == 429) { // Check status directly
+                    try {
+                        Thread.sleep(15 * 60 * 1000); // Wait for 15 minutes
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("Thread interrupted during retry wait", interruptedException);
+                    }
+                } else {
+                    super.continueOrPropagate(e);
+                }
+            }
+        };
     }
 
     private Feign.Builder builderClient(String apiEndpoint, String logLevel, Retryer retryer,
