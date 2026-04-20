@@ -1,6 +1,7 @@
 package com.nbs.nbsback.services;
 
 import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,7 +121,11 @@ public class StatsService {
                                 .orElseThrow(() -> new IllegalArgumentException("Stat not found with ID: " + id));
         }
 
-        public List<Stat> getAllStats() {
+        public List<Stat> getAllStats(LocalDate date) {
+                if (date != null) {
+                        return statRepository.findStatsByDateInRange(date.atStartOfDay());
+                }
+
                 return statRepository.findAll();
         }
 
