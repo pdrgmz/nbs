@@ -27,13 +27,8 @@ public class ActivityService {
         return activityRepository.findById(id);
     }
 
-    public Activity createActivity(Activity activity) {
-        return activityRepository.save(activity);
+    public ArrayList<Activity> getActivitiesByDateRange(LocalDateTime startDate, LocalDateTime endDate, String type) {
+        return activityRepository.findByStartDateBetweenAndType(startDate, endDate, type);
     }
-
-    public ArrayList<Activity> getActivitiesByDateRange(LocalDateTime startDate, LocalDateTime endDate) {
-        return activityRepository.findByStartDateBetween(startDate, endDate);
-    }
-
-   
+       
 }

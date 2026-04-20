@@ -47,13 +47,7 @@ public class TokenService {
         return refreshTokenHolder.get();
     }
 
-    public void clearAccessToken() {
-        accessTokenHolder.remove();
-    }
 
-    public void clearRefreshToken() {
-        refreshTokenHolder.remove();
-    }
 
     public void refreshToken() {
         Map<String, Object> response = stravaOauthClient.stravaToken(

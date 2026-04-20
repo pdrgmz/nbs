@@ -66,23 +66,7 @@ public class StravaService {
 
     }
 
-    public String syncAllStats() {
-
-        Athlete athlete = athleteRepository.findById(60270508L)
-                .orElseThrow(() -> new IllegalArgumentException("Athlete not found with ID: " + 60270508L));
-
-        tokenService.refreshToken(athlete.getId());
-        LocalDateTime now = LocalDateTime.now();
-        for (int year = athlete.getCreatedAt().getYear(); year <= now.getYear(); year++) {
-            try {
-                statsService.calculateAllStats(year, athlete);
-            } catch (Exception e) {
-                logger.error("Error calculating stats for year {}", year);
-            }
-        }
-
-        return "Data synchronization done. Check logs for details.";
-    }
+   
 
     private StravaAthlete fetchAndSaveAthleteData() {
         logger.info("Starting athlete data synchronization...");
@@ -291,63 +275,7 @@ public class StravaService {
         return result.toString();
     }
 
-    public List<double[]> decodePolylineToCoordinates(String encoded) {
-        List<double[]> coordinates = new ArrayList<>();
-        int index = 0, len = encoded.length();
-        int lat = 0, lng = 0;
-
-        while (index < len) {
-            int b, shift = 0, value = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                value |= (b & 0x1F) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlat = ((value & 1) != 0 ? ~(value >> 1) : (value >> 1));
-            lat += dlat;
-
-            shift = 0;
-            value = 0;
-            do {
-                b = encoded.charAt(index++) - 63;
-                value |= (b & 0x1F) << shift;
-                shift += 5;
-            } while (b >= 0x20);
-            int dlng = ((value & 1) != 0 ? ~(value >> 1) : (value >> 1));
-            lng += dlng;
-
-            coordinates.add(new double[] { lat / 1E5, lng / 1E5 });
-        }
-
-        return coordinates;
-    }
-
-    public String scaleCoordinatesToSvg(List<double[]> coordinates, double padding, double svgSize) {
-        double minLat = coordinates.stream().mapToDouble(coord -> coord[0]).min().orElse(0);
-        double maxLat = coordinates.stream().mapToDouble(coord -> coord[0]).max().orElse(0);
-        double minLng = coordinates.stream().mapToDouble(coord -> coord[1]).min().orElse(0);
-        double maxLng = coordinates.stream().mapToDouble(coord -> coord[1]).max().orElse(0);
-
-        double latRange = maxLat - minLat;
-        double lngRange = maxLng - minLng;
-        double maxRange = Math.max(latRange, lngRange);
-
-        double xOffset = (maxRange - lngRange) / 2;
-        double yOffset = (maxRange - latRange) / 2;
-
-        StringBuilder svgPoints = new StringBuilder();
-        for (double[] coord : coordinates) {
-            double x = padding + ((coord[1] - minLng + xOffset) / maxRange) * (svgSize - 2 * padding);
-            double y = padding + ((maxLat - coord[0] + yOffset) / maxRange) * (svgSize - 2 * padding);
-            svgPoints.append(x).append(",").append(y).append(" ");
-        }
-
-        if (svgPoints.length() > 0) {
-            svgPoints.setLength(svgPoints.length() - 1); // Remove trailing space
-        }
-
-        return svgPoints.toString();
-    }
+  
 
     public void syncActivity(Long objectId, Long ownerId) {
 
