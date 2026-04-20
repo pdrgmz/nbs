@@ -1,21 +1,22 @@
 package com.nbs.nbsback.models;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.ToString;
 
@@ -31,18 +32,14 @@ public class Stat {
     @Enumerated(EnumType.STRING)
     private StatType type;
 
-    @ManyToOne
-    @JsonIgnore
-    @JoinColumn(name = "athlete_id", nullable = false)
-    private Athlete athlete;
+    private Long athleteId;
 
-    @ManyToMany(cascade = CascadeType.ALL)
-    @JoinTable(
-        name = "stat_activities",
-        joinColumns = @JoinColumn(name = "stat_id"),
-        inverseJoinColumns = @JoinColumn(name = "activity_id")
-    )
+    @Transient
     private List<Activity> activities;
+
+    @JsonIgnore
+    @Column(columnDefinition = "TEXT")
+    private String activityIdsCsv;
 
     private double totalDistance; // in kilometers
     private double totalTime; // in hours
@@ -53,19 +50,52 @@ public class Stat {
 
     public Stat() {}
 
-    public Stat(StatType type, List<Activity> activities, LocalDateTime startDate, LocalDateTime endDate, Athlete athlete) {
+    public Stat(StatType type, List<Activity> activities, LocalDateTime startDate, LocalDateTime endDate, Long athleteId) {
         this.type = type;
-        this.activities = activities;
+        this.activities = activities != null ? new ArrayList<>(activities) : new ArrayList<>();
         this.startDate = startDate;
         this.endDate = endDate;
-        this.athlete = athlete;
-        calculateStats(activities);
+        this.athleteId = athleteId;
+        setActivityIds(this.activities.stream().map(Activity::getId).toList());
+        calculateStats(this.activities);
     }
 
-      public void calculateStats(List<Activity> activities) {
+    public void calculateStats(List<Activity> activities) {
+        if (activities == null || activities.isEmpty()) {
+            this.totalDistance = 0;
+            this.totalTime = 0;
+            this.averagePace = 0;
+            return;
+        }
+
         this.totalDistance = activities.stream().mapToDouble(Activity::getDistance).sum() / 1000; // Convert to kilometers
-        this.totalTime = activities.stream().mapToDouble(Activity::getMovingTime).sum() / 3600; // Convert to hours
+        this.totalTime = activities.stream().mapToDouble(activity -> activity.getMovingTime() != null ? activity.getMovingTime() : 0).sum() / 3600; // Convert to hours
         this.averagePace = this.totalTime > 0 ? this.totalDistance / this.totalTime : 0;
+    }
+
+    public List<Long> getActivityIds() {
+        if (activityIdsCsv == null || activityIdsCsv.isBlank()) {
+            return new ArrayList<>();
+        }
+
+        return Arrays.stream(activityIdsCsv.split(","))
+                .map(String::trim)
+                .filter(value -> !value.isBlank())
+                .map(Long::valueOf)
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    public void setActivityIds(List<Long> activityIds) {
+        List<Long> safeIds = activityIds != null ? activityIds : Collections.emptyList();
+        this.activityIdsCsv = safeIds.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    public void addActivityId(Long activityId) {
+        List<Long> activityIds = getActivityIds();
+        if (!activityIds.contains(activityId)) {
+            activityIds.add(activityId);
+            setActivityIds(activityIds);
+        }
     }
 
     

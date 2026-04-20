@@ -164,7 +164,7 @@ public class StravaService {
             logger.info("Building and saving stream data of type: {} for activity ID: {}",
                     stravaStream.getType(), activityId);
 
-            Stream stream = buildDataStreamFromStrava(activity, stravaStream);
+            Stream stream = buildDataStreamFromStrava(activityId, stravaStream);
             streamRepository.save(stream);
         }
     }
@@ -197,7 +197,7 @@ public class StravaService {
         return new Activity().builder()
                 .id(stravaActivityDetail.getId())
 
-                .athlete(athlete) // Assign the Athlete object instead of athleteId
+                .athleteId(athlete.getId())
 
                 .name(stravaActivityDetail.getName())
                 .distance(stravaActivityDetail.getDistance())
@@ -231,7 +231,7 @@ public class StravaService {
                 .build();
     }
 
-    private Stream buildDataStreamFromStrava(Activity activity, StravaStream stravaStream) {
+    private Stream buildDataStreamFromStrava(Long activityId, StravaStream stravaStream) {
 
         ObjectMapper objectMapper = new ObjectMapper();
         String dataJson = null;
@@ -247,7 +247,7 @@ public class StravaService {
                 .seriesType(stravaStream.getSeriesType())
                 .originalSize(stravaStream.getOriginalSize())
                 .resolution(stravaStream.getResolution())
-                .activity(activity) // Assign the Activity object instead of activityId
+                .activityId(activityId)
                 .build();
 
     }

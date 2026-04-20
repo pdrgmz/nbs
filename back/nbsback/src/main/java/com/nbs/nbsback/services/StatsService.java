@@ -5,6 +5,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
@@ -42,23 +43,23 @@ public class StatsService {
                 List<Activity> allActivities = activityRepository.findByStartDateBetweenAndAthleteIdAndType(startOfYear,
                                 endOfYear, athlete.getId(), "Run");
 
-                calculateYearlyStats(athlete, startOfYear, endOfYear, allActivities);
-                calculateMonthlyStats(athlete, startOfYear, endOfYear, allActivities);
-                calculateWeeklyStats(athlete, startOfYear, endOfYear, allActivities);
+                calculateYearlyStats(athlete.getId(), startOfYear, endOfYear, allActivities);
+                calculateMonthlyStats(athlete.getId(), startOfYear, endOfYear, allActivities);
+                calculateWeeklyStats(athlete.getId(), startOfYear, endOfYear, allActivities);
 
                 return true;
         }
 
-        private void calculateYearlyStats(Athlete athlete, LocalDateTime startOfYear, LocalDateTime endOfYear,
+        private void calculateYearlyStats(Long athleteId, LocalDateTime startOfYear, LocalDateTime endOfYear,
                         List<Activity> allActivities) {
 
                 // Calculate yearly stats
-                Stat yearlyStat = new Stat(StatType.ANNUAL, allActivities, startOfYear, endOfYear, athlete);
+                Stat yearlyStat = new Stat(StatType.ANNUAL, allActivities, startOfYear, endOfYear, athleteId);
 
                 statRepository.save(yearlyStat);
         }
 
-        private void calculateWeeklyStats(Athlete athlete, LocalDateTime startOfYear, LocalDateTime endOfYear,
+        private void calculateWeeklyStats(Long athleteId, LocalDateTime startOfYear, LocalDateTime endOfYear,
                         List<Activity> allActivities) {
                 // Adjust startOfYear to the Monday before January 1st
                 while (startOfYear.getDayOfWeek() != DayOfWeek.MONDAY) {
@@ -83,13 +84,13 @@ public class StatsService {
                                         
                                                 Stat weeklyStat = new Stat(StatType.WEEKLY, periodActivities,
                                                                 periodStart,
-                                                                periodEnd, athlete);
+                                                                periodEnd, athleteId);
                                                 statRepository.save(weeklyStat);
                                         
                                 });
         }
 
-        private void calculateMonthlyStats(Athlete athlete, LocalDateTime startOfYear, LocalDateTime endOfYear,
+        private void calculateMonthlyStats(Long athleteId, LocalDateTime startOfYear, LocalDateTime endOfYear,
                         List<Activity> allActivities) {
                 // Calculate monthly stats for all 12 months of the year
                 Stream.iterate(startOfYear, periodStart -> periodStart.isBefore(endOfYear),
@@ -109,7 +110,7 @@ public class StatsService {
 
                                         
                                                 Stat monthlyStat = new Stat(StatType.MONTHLY, periodActivities,
-                                                                periodStart, periodEnd, athlete);
+                                                                periodStart, periodEnd, athleteId);
                                                 statRepository.save(monthlyStat);
                                         
 
@@ -117,20 +118,23 @@ public class StatsService {
         }
 
         public Stat getStatById(Long id) {
-                return statRepository.findById(id)
+                Stat stat = statRepository.findById(id)
                                 .orElseThrow(() -> new IllegalArgumentException("Stat not found with ID: " + id));
+                return hydrateStatActivities(stat);
         }
 
         public List<Stat> getAllStats(LocalDate date) {
                 if (date != null) {
-                        return statRepository.findStatsByDateInRange(date.atStartOfDay());
+                        return hydrateStatsActivities(statRepository.findStatsByDateInRange(date.atStartOfDay()));
                 }
 
-                return statRepository.findAll();
+                return hydrateStatsActivities(statRepository.findAll());
         }
 
         public List<Stat> getStatsByActivityId(Long activityId) {
-                return statRepository.findByActivitiesId(activityId);
+                return hydrateStatsActivities(statRepository.findAll()).stream()
+                                .filter(stat -> stat.getActivityIds().contains(activityId))
+                                .collect(Collectors.toList());
         }
 
         public void syncStatsForActivity(Long objectId) {
@@ -142,43 +146,60 @@ public class StatsService {
 
                 logger.info("Found activity: {} - {} - {}", newActivity.getId(), newActivity.getName(), newActivity.getStartDate());
 
-                Athlete athlete = newActivity.getAthlete();
+                Long athleteId = newActivity.getAthleteId();
                 LocalDateTime activityDate = newActivity.getStartDateLocal();
 
                 // Ensure stats exist for the activity
-                ensureStatsForActivity(athlete, activityDate);
+                ensureStatsForActivity(athleteId, activityDate);
 
                 // Sync activity with existing stats
-                List<Stat> allStats = statRepository.findStatsByDateInRange(activityDate);
+                List<Stat> allStats = statRepository.findStatsByDateInRangeAndAthleteId(activityDate, athleteId);
                 allStats.forEach(stat -> {
                         logger.info("Stat: {} - {} - {} to {}", stat.getId(), stat.getType(), stat.getStartDate(), stat.getEndDate());
-                        if (stat.getActivities().stream().noneMatch(activity -> activity.getId().equals(objectId))) {
-                                stat.getActivities().add(newActivity);
-                                stat.calculateStats(stat.getActivities());
+                        if (!stat.getActivityIds().contains(objectId)) {
+                                stat.addActivityId(objectId);
+                                List<Activity> updatedActivities = activityRepository.findAllById(stat.getActivityIds());
+                                stat.setActivities(updatedActivities);
+                                stat.calculateStats(updatedActivities);
                                 statRepository.save(stat);
                         }
                 });
         }
 
-        private void ensureStatsForActivity(Athlete athlete, LocalDateTime activityDate) {
+        private void ensureStatsForActivity(Long athleteId, LocalDateTime activityDate) {
                 LocalDateTime startOfYear = activityDate.withDayOfYear(1).toLocalDate().atStartOfDay();
                 LocalDateTime endOfYear = startOfYear.plusYears(1).minusSeconds(1);
-                ensureStatExists(StatType.ANNUAL, athlete, startOfYear, endOfYear);
+                ensureStatExists(StatType.ANNUAL, athleteId, startOfYear, endOfYear);
 
                 LocalDateTime startOfMonth = activityDate.withDayOfMonth(1).toLocalDate().atStartOfDay();
                 LocalDateTime endOfMonth = startOfMonth.plusMonths(1).minusSeconds(1);
-                ensureStatExists(StatType.MONTHLY, athlete, startOfMonth, endOfMonth);
+                ensureStatExists(StatType.MONTHLY, athleteId, startOfMonth, endOfMonth);
 
                 LocalDateTime startOfWeek = activityDate.with(DayOfWeek.MONDAY).toLocalDate().atStartOfDay();
                 LocalDateTime endOfWeek = startOfWeek.plusDays(6).withHour(23).withMinute(59).withSecond(59);
-                ensureStatExists(StatType.WEEKLY, athlete, startOfWeek, endOfWeek);
+                ensureStatExists(StatType.WEEKLY, athleteId, startOfWeek, endOfWeek);
         }
 
-        private void ensureStatExists(StatType type, Athlete athlete, LocalDateTime startDate, LocalDateTime endDate) {
-                if (!statRepository.existsByTypeAndAthleteAndStartDateAndEndDate(type, athlete, startDate, endDate)) {
-                        Stat stat = new Stat(type, new ArrayList<>(), startDate, endDate, athlete);
+        private void ensureStatExists(StatType type, Long athleteId, LocalDateTime startDate, LocalDateTime endDate) {
+                if (!statRepository.existsByTypeAndAthleteIdAndStartDateAndEndDate(type, athleteId, startDate, endDate)) {
+                        Stat stat = new Stat(type, new ArrayList<>(), startDate, endDate, athleteId);
                         statRepository.save(stat);
                 }
+        }
+
+        private List<Stat> hydrateStatsActivities(List<Stat> stats) {
+                return stats.stream().map(this::hydrateStatActivities).collect(Collectors.toList());
+        }
+
+        private Stat hydrateStatActivities(Stat stat) {
+                List<Long> activityIds = stat.getActivityIds();
+                if (activityIds.isEmpty()) {
+                        stat.setActivities(new ArrayList<>());
+                        return stat;
+                }
+
+                stat.setActivities(activityRepository.findAllById(activityIds));
+                return stat;
         }
 
 }
