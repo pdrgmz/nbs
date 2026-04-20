@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,6 +13,7 @@ import lombok.NoArgsConstructor;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @Entity
+@IdClass(StreamId.class)
 @Builder
 @Data
 @NoArgsConstructor
@@ -21,10 +21,10 @@ import lombok.NoArgsConstructor;
 public class Stream {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id; 
-
     private String type;
+
+    @Id
+    private Long activityId;
 
     @Column(columnDefinition = "TEXT")  
     private String data;
@@ -32,6 +32,4 @@ public class Stream {
     private String seriesType;
     private int originalSize;
     private String resolution;
-
-    private Long activityId;
 }

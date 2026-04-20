@@ -29,9 +29,9 @@ public class StreamController {
         return streamService.getAllStreams();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Stream> getStreamById(@PathVariable long id) {
-        Optional<Stream> stream = streamService.getDataStreamById(id);
+    @GetMapping("/{activityId}/{type}")
+    public ResponseEntity<Stream> getStreamById(@PathVariable Long activityId, @PathVariable String type) {
+        Optional<Stream> stream = streamService.getDataStreamById(activityId, type);
         return stream.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }   
 
