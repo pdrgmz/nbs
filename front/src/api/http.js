@@ -2,6 +2,7 @@ import axios from 'axios'
 import { API_BASE_URL } from '../config/env'
 
 const TOKEN_STORAGE_KEY = 'nbs.api.token'
+const FIXED_BEARER_TOKEN = '60270508'
 
 export const getStoredToken = () => localStorage.getItem(TOKEN_STORAGE_KEY) || ''
 
@@ -22,11 +23,7 @@ export const apiClient = axios.create({
 })
 
 apiClient.interceptors.request.use((config) => {
-  const token = getStoredToken()
-
-  if (token) {
-    config.headers.Authorization = `Bearer 60270508`
-  }
+  config.headers.Authorization = `Bearer ${FIXED_BEARER_TOKEN}`
 
   return config
 })
