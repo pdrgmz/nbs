@@ -97,13 +97,34 @@ const flatActivities = computed(() => {
   return activitiesByWeekday.value.flatMap((day) => day.activities)
 })
 
+const getActivityTimestamp = (activity) => {
+  const rawDate = activity?.startDateLocal || activity?.startDate
+  const parsed = new Date(rawDate)
+  const timestamp = parsed.getTime()
+  return Number.isFinite(timestamp) ? timestamp : -Infinity
+}
+
+const mostRecentActivity = computed(() => {
+  if (!flatActivities.value.length) {
+    return null
+  }
+
+  return flatActivities.value.reduce((latest, current) => {
+    if (!latest) {
+      return current
+    }
+
+    return getActivityTimestamp(current) > getActivityTimestamp(latest) ? current : latest
+  }, null)
+})
+
 const selectedActivity = computed(() => {
   if (!flatActivities.value.length) {
     return null
   }
 
   const explicitSelection = flatActivities.value.find((activity) => activity.id === selectedActivityId.value)
-  return explicitSelection || flatActivities.value[0]
+  return explicitSelection || mostRecentActivity.value
 })
 
 const streamTypeMap = {
