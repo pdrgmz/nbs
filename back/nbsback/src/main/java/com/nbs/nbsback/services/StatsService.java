@@ -37,18 +37,52 @@ public class StatsService {
                 return hydrateStatActivities(stat);
         }
 
-        public List<Stat> getAllStats(LocalDate date) {
-                if (date != null) {
-                        return hydrateStatsActivities(statRepository.findStatsByDateInRange(date.atStartOfDay()));
+        public List<Stat> getAllStats(LocalDate date, String type) {
+                List<Stat> stats;
+
+                if (type != null && date != null) {
+                        stats = statRepository.findAll().stream()
+                                        .filter(stat -> stat.getType().name().equalsIgnoreCase(type))
+                                        .filter(stat -> date.isAfter(stat.getStartDate().toLocalDate()) && date.isBefore(stat.getEndDate().toLocalDate()))
+                                        .collect(Collectors.toList());
+                } else if (type != null) {
+                        stats = statRepository.findAll().stream()
+                                        .filter(stat -> stat.getType().name().equalsIgnoreCase(type))
+                                        .collect(Collectors.toList());
+                } else if (date != null) {
+                        stats = statRepository.findStatsByDateInRange(date.atStartOfDay());
+                } else {
+                        stats = statRepository.findAll();
                 }
 
-                return hydrateStatsActivities(statRepository.findAll());
+                return hydrateStatsActivities(stats);
         }
 
         public List<Stat> getStatsByActivityId(Long activityId) {
                 return hydrateStatsActivities(statRepository.findAll()).stream()
                                 .filter(stat -> stat.getActivityIds().contains(activityId))
                                 .collect(Collectors.toList());
+        }
+
+        public List<Stat> getStatsByTypeAndDate(String type, LocalDate date) {
+                List<Stat> stats;
+
+                if (type != null && date != null) {
+                        stats = statRepository.findAll().stream()
+                                        .filter(stat -> stat.getType().name().equalsIgnoreCase(type))
+                                        .filter(stat -> date.isAfter(stat.getStartDate().toLocalDate()) && date.isBefore(stat.getEndDate().toLocalDate()))
+                                        .collect(Collectors.toList());
+                } else if (type != null) {
+                        stats = statRepository.findAll().stream()
+                                        .filter(stat -> stat.getType().name().equalsIgnoreCase(type))
+                                        .collect(Collectors.toList());
+                } else if (date != null) {
+                        stats = statRepository.findStatsByDateInRange(date.atStartOfDay());
+                } else {
+                        stats = statRepository.findAll();
+                }
+
+                return hydrateStatsActivities(stats);
         }
 
         public void syncStatsForActivity(Long objectId) {

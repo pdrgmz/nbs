@@ -29,8 +29,16 @@ public class StatsController {
 
     @GetMapping
     public List<Stat> getAllStats(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam(required = false) String type) {
+        return statsService.getAllStats(date, type);
+    }
+
+    @GetMapping("/filter")
+    public List<Stat> getStatsByTypeAndDate(
+            @RequestParam(required = false) String type,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
-        return statsService.getAllStats(date);
+        return statsService.getStatsByTypeAndDate(type, date);
     }
 
 }
