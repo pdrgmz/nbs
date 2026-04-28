@@ -18,6 +18,11 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "athlete", indexes = {
+    @Index(name = "idx_username", columnList = "username"),
+    @Index(name = "idx_created_at", columnList = "createdAt"),
+    @Index(name = "idx_updated_at", columnList = "updatedAt")
+})
 public class Athlete {
 
     @Id

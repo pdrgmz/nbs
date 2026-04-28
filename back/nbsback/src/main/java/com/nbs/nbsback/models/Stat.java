@@ -23,6 +23,13 @@ import lombok.ToString;
 @Data
 @ToString
 @Entity
+@Table(name = "stat", indexes = {
+        @Index(name = "idx_type", columnList = "type"),
+        @Index(name = "idx_start_date", columnList = "startDate"),
+        @Index(name = "idx_end_date", columnList = "endDate"),
+        @Index(name = "idx_type_start_date", columnList = "type, startDate"),
+        @Index(name = "idx_athlete_id", columnList = "athleteId")
+})
 public class Stat {
 
     @Id

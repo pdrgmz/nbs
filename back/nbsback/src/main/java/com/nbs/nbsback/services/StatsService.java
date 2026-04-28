@@ -40,14 +40,16 @@ public class StatsService {
         public List<Stat> getAllStats(LocalDate date, String type) {
                 List<Stat> stats;
 
-                if (type != null && date != null) {
+                if (type != null) {
                         stats = statRepository.findAll().stream()
                                         .filter(stat -> stat.getType().name().equalsIgnoreCase(type))
-                                        .filter(stat -> date.isAfter(stat.getStartDate().toLocalDate()) && date.isBefore(stat.getEndDate().toLocalDate()))
-                                        .collect(Collectors.toList());
-                } else if (type != null) {
-                        stats = statRepository.findAll().stream()
-                                        .filter(stat -> stat.getType().name().equalsIgnoreCase(type))
+                                        .filter(stat -> {
+                                                if (date != null) {
+                                                        int year = date.getYear();
+                                                        return year == stat.getStartDate().getYear();
+                                                }
+                                                return true;
+                                        })
                                         .collect(Collectors.toList());
                 } else if (date != null) {
                         stats = statRepository.findStatsByDateInRange(date.atStartOfDay());

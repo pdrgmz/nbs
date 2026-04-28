@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.Index;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +20,12 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+@Table(name = "activity", indexes = {
+    @Index(name = "idx_athlete_id", columnList = "athleteId"),
+    @Index(name = "idx_start_date", columnList = "startDate"),
+    @Index(name = "idx_start_date_local", columnList = "startDateLocal"),
+    @Index(name = "idx_type", columnList = "type")
+})
 public class Activity {
 
     @Id
