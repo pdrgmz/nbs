@@ -8,6 +8,10 @@
 	--accent: #111111;
 	--danger: #111111;
 	--ok: #111111;
+	--space-xs: 6px;
+	--space-sm: 10px;
+	--space-md: 14px;
+	--space-lg: 20px;
 }
 
 * {
@@ -33,13 +37,23 @@ body {
 .shell-bg {
 	min-height: 100vh;
 	min-height: 100dvh;
-	padding: 0;
 }
 
 .shell-grid {
 	min-height: inherit;
 	max-width: 1120px;
-	margin: 0 auto;
+	margin: 0 auto; 
+}
+
+.shell-grid.shell-grid-full {
+	max-width: none;
+	width: 100%;
+	margin: 0;
+}
+
+.content-grid.content-grid-full {
+	min-height: 100dvh;
+	gap: 0;
 }
 
 .app-header {
@@ -85,7 +99,7 @@ body {
 .module-grid,
 .activities-grid {
 	display: grid;
-	gap: 12px;
+	gap: var(--space-md);
 }
 
 .content-grid,
@@ -278,7 +292,7 @@ textarea {
 .week-shell,
 .week-rows {
 	display: grid;
-	gap: 12px;
+	gap: var(--space-md);
 }
 
 .week-view,
@@ -289,21 +303,181 @@ textarea {
 .week-days-track {
 	display: grid;
 	grid-template-columns: 44px repeat(7, minmax(0, 1fr)) 44px;
-	gap: 12px;
+	gap: var(--space-sm);
 	height: 100%;
 	min-height: 0;
 	align-items: stretch;
 	overflow: visible;
-	padding-bottom: 6px;
+	padding-bottom: var(--space-xs);
 }
 
 .activities-layout {
 	display: grid;
 	grid-template-columns: 1fr;
-	grid-template-rows: minmax(0, 3fr) auto minmax(0, 1fr);
+	grid-template-rows: auto minmax(0, 1fr);
 	min-height: calc(100vh - 24px);
-	gap: 8px;
+	gap: var(--space-md);
 	align-items: stretch;
+}
+
+.week-summary-shell {
+	display: grid;
+	grid-template-columns: repeat(4, minmax(0, 1fr));
+	gap: var(--space-sm);
+  margin: var(--space-xs) 0;
+}
+
+.week-summary-card {
+	border: 1px solid var(--line);
+	background: var(--surface);
+	padding: var(--space-md);
+	display: grid;
+	gap: var(--space-xs);
+}
+
+.week-summary-card h3 {
+	margin: 0;
+	font-size: 1.35rem;
+}
+
+.week-summary-icon {
+	margin: 0;
+	font-size: 1.1rem;
+	line-height: 1;
+	color: var(--ink-soft);
+}
+
+.week-summary-meta {
+	margin: 0;
+	font-size: 0.82rem;
+	color: var(--ink-soft);
+}
+
+.week-summary-trend {
+	font-size: 0.82rem;
+	font-weight: 600;
+}
+
+.week-summary-trend.is-up {
+	color: #0d7a2f;
+}
+
+.week-summary-trend.is-down {
+	color: #a32222;
+}
+
+.week-summary-trend.is-neutral {
+	color: var(--ink-soft);
+}
+
+.year-weeks-shell {
+	border: 1px solid var(--line);
+	background: var(--surface);
+	padding: var(--space-sm);
+	display: grid;
+	gap: var(--space-xs);
+	min-height: 160px;
+	width: 100%;
+  margin: var(--space-sm);
+}
+
+.year-weeks-head {
+	margin: 0;
+	font-size: 0.95rem;
+	color: var(--ink-soft);
+}
+
+.year-weeks-loading {
+	min-height: 120px;
+	display: grid;
+	place-items: center;
+	color: var(--ink-soft);
+}
+
+
+.year-weeks-plot {
+	position: relative;
+	display: grid;
+	min-height: 120px;
+	width: 100%;
+}
+
+.year-weeks-scroll {
+	overflow-x: auto;
+	overflow-y: hidden;
+	padding-bottom: 4px;
+	width: 100%;
+}
+
+.year-weeks-bars {
+	position: relative;
+	min-height: 120px;
+	height: 120px;
+	min-width: 100%;
+	display: flex;
+	align-items: flex-end;
+	gap: 4px;
+	border-bottom: 1px solid var(--line);
+}
+
+.year-weeks-bar-hit {
+	flex: 1 0 12px;
+	height: 100%;
+	min-width: 10px;
+	display: flex;
+	align-items: flex-end;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+}
+
+.year-weeks-bar-hit:hover,
+.year-weeks-bar-hit:focus-visible {
+	background: transparent;
+	outline: none;
+}
+
+.year-weeks-bar-hit:focus-visible .year-weeks-bar {
+	outline: 1px solid #111111;
+	outline-offset: 1px;
+}
+
+.year-weeks-tooltip {
+	position: absolute;
+	transform: translate(-50%, -100%);
+	pointer-events: none;
+	background: #111111;
+	color: #ffffff;
+	font-size: 0.75rem;
+	line-height: 1;
+	padding: 6px 8px;
+	white-space: nowrap;
+	z-index: 2;
+}
+
+.year-weeks-chart {
+	width: 100%;
+	height: 120px;
+	display: block;
+}
+
+.year-weeks-axis {
+	stroke: var(--line);
+	stroke-width: 1;
+}
+
+.year-weeks-bar {
+	display: block;
+	width: 100%;
+	fill: #c3c3c3;
+	background: #c3c3c3;
+	transition: fill 0.15s ease, opacity 0.15s ease;
+}
+
+.year-weeks-bar.is-active {
+	fill: #111111;
+	background: #111111;
 }
 
 .route-switches-shell {
@@ -388,8 +562,8 @@ textarea {
 	display: grid;
 	grid-template-columns: 1fr;
 	grid-template-rows: minmax(0, 1fr) auto;
-	gap: 10px;
-	padding: 10px;
+	gap: var(--space-sm);
+	padding: var(--space-sm);
 	border: 1px solid var(--line);
 	border-radius: 0;
 	background: var(--surface);
@@ -436,7 +610,7 @@ textarea {
 	padding: 0;
 	display: grid;
 	grid-template-columns: 1fr;
-	gap: 8px;
+	gap: var(--space-sm);
 	overflow: visible;
 	padding-bottom: 0;
 }
@@ -460,7 +634,7 @@ textarea {
 
 .activity-route {
 	position: relative;
-	min-height: 72px;
+	min-height: 84px;
 	display: grid;
 	place-items: center;
 }
@@ -607,8 +781,12 @@ textarea {
 
 @media (max-width: 760px) {
 	.shell-bg {
-    height: 100%;
-		padding: 0px;
+		height: 100%;
+		padding: var(--space-sm);
+	}
+
+	.shell-grid {
+		padding-inline: 0;
 	}
 
 	.app-header,
@@ -645,11 +823,16 @@ textarea {
 
 	.activities-layout {
 		grid-template-columns: 1fr;
-		grid-template-rows: minmax(0, 90dvh) auto auto;
+		grid-template-rows: auto minmax(0, 1fr);
 		min-height: 100dvh;
+		gap: var(--space-sm);
 	}
 
 	.route-switches-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.week-summary-shell {
 		grid-template-columns: 1fr;
 	}
 
@@ -661,6 +844,7 @@ textarea {
 	.week-days-track {
 		grid-template-columns: 1fr;
 		grid-auto-flow: row;
+		gap: var(--space-sm);
 		overflow: visible;
 		height: auto;
 	}
@@ -702,6 +886,7 @@ textarea {
 		align-items: center;
 		justify-items: end;
 		align-self: center;
+		gap: var(--space-sm);
 	}
 
 	.day-activities .activity-card {
